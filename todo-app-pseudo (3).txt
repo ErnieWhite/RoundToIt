@@ -1,0 +1,138 @@
+// Data Structure
+enum NoteCategory:
+    GENERAL
+    BLOCKER
+    PROGRESS_UPDATE
+    QUESTION
+    REFERENCE
+    DECISION
+
+class Note:
+    id: Integer
+    content: String
+    category: NoteCategory
+    createdAt: Date
+    
+class TodoItem:
+    id: Integer
+    title: String
+    description: String
+    completed: Boolean
+    dueDate: Date
+    createdAt: Date
+    notes: List<Note>
+    
+class TodoList:
+    items: List<TodoItem>
+    
+// Main Application Class
+class TodoApp:
+    todoList: TodoList
+    
+    // Create a new todo item
+    function createTodo(title, description, dueDate):
+        newTodo = new TodoItem
+        newTodo.id = generateUniqueId()
+        newTodo.title = title
+        newTodo.description = description
+        newTodo.dueDate = dueDate
+        newTodo.completed = false
+        newTodo.createdAt = getCurrentDate()
+        newTodo.notes = []
+        
+        todoList.items.append(newTodo)
+        return newTodo
+    
+    // Add categorized note to todo item
+    function addNote(todoId, noteContent, category = NoteCategory.GENERAL):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+            
+        newNote = new Note
+        newNote.id = generateUniqueId()
+        newNote.content = noteContent
+        newNote.category = category
+        newNote.createdAt = getCurrentDate()
+        
+        todo.notes.append(newNote)
+        return newNote
+    
+    // Get all notes for a todo item
+    function getNotes(todoId):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+        return todo.notes
+    
+    // Get notes by category
+    function getNotesByCategory(todoId, category):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+            
+        categoryNotes = []
+        for note in todo.notes:
+            if note.category equals category:
+                categoryNotes.append(note)
+        return categoryNotes
+    
+    // Get all notes across todos by category
+    function getAllNotesByCategory(category):
+        categoryNotes = []
+        for todo in todoList.items:
+            for note in todo.notes:
+                if note.category equals category:
+                    categoryNotes.append({
+                        todoId: todo.id,
+                        todoTitle: todo.title,
+                        note: note
+                    })
+        return categoryNotes
+    
+    // Update a specific note
+    function updateNote(todoId, noteId, updates):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+            
+        for note in todo.notes:
+            if note.id equals noteId:
+                if updates.content exists:
+                    note.content = updates.content
+                if updates.category exists:
+                    note.category = updates.category
+                return note
+        throw NoteNotFoundError
+    
+    // Delete a specific note
+    function deleteNote(todoId, noteId):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+            
+        for i = 0 to todo.notes.length:
+            if todo.notes[i].id equals noteId:
+                remove todo.notes[i]
+                return true
+        throw NoteNotFoundError
+    
+    // Get summary of notes by category
+    function getNotesSummaryByCategory(todoId):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+            
+        summary = {}
+        for category in NoteCategory:
+            summary[category] = 0
+            
+        for note in todo.notes:
+            summary[note.category]++
+            
+        return summary
+    
+    [... rest of the previous TodoApp methods remain unchanged ...]
+
+// Helper Functions
+[... previous helper functions remain unchanged ...]

@@ -1,0 +1,154 @@
+// Data Structure
+class Note:
+    id: Integer
+    content: String
+    createdAt: Date
+    
+class TodoItem:
+    id: Integer
+    title: String
+    description: String
+    completed: Boolean
+    dueDate: Date
+    createdAt: Date
+    notes: List<Note>    // Added notes list
+    
+class TodoList:
+    items: List<TodoItem>
+    
+// Main Application Class
+class TodoApp:
+    todoList: TodoList
+    
+    // Create a new todo item
+    function createTodo(title, description, dueDate):
+        newTodo = new TodoItem
+        newTodo.id = generateUniqueId()
+        newTodo.title = title
+        newTodo.description = description
+        newTodo.dueDate = dueDate
+        newTodo.completed = false
+        newTodo.createdAt = getCurrentDate()
+        newTodo.notes = []    // Initialize empty notes list
+        
+        todoList.items.append(newTodo)
+        return newTodo
+    
+    // Add note to todo item
+    function addNote(todoId, noteContent):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+            
+        newNote = new Note
+        newNote.id = generateUniqueId()
+        newNote.content = noteContent
+        newNote.createdAt = getCurrentDate()
+        
+        todo.notes.append(newNote)
+        return newNote
+    
+    // Get all notes for a todo item
+    function getNotes(todoId):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+        return todo.notes
+    
+    // Update a specific note
+    function updateNote(todoId, noteId, newContent):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+            
+        for note in todo.notes:
+            if note.id equals noteId:
+                note.content = newContent
+                return note
+        throw NoteNotFoundError
+    
+    // Delete a specific note
+    function deleteNote(todoId, noteId):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+            
+        for i = 0 to todo.notes.length:
+            if todo.notes[i].id equals noteId:
+                remove todo.notes[i]
+                return true
+        throw NoteNotFoundError
+    
+    // Read all todos
+    function getAllTodos():
+        return todoList.items
+    
+    // Read todos by filter
+    function getTodosByFilter(filter):
+        filteredTodos = []
+        for todo in todoList.items:
+            if matchesFilter(todo, filter):
+                filteredTodos.append(todo)
+        return filteredTodos
+    
+    // Update todo
+    function updateTodo(id, updatedFields):
+        todo = findTodoById(id)
+        if todo is null:
+            throw TodoNotFoundError
+            
+        if updatedFields.title exists:
+            todo.title = updatedFields.title
+        if updatedFields.description exists:
+            todo.description = updatedFields.description
+        if updatedFields.dueDate exists:
+            todo.dueDate = updatedFields.dueDate
+        if updatedFields.completed exists:
+            todo.completed = updatedFields.completed
+        return todo
+    
+    // Delete todo
+    function deleteTodo(id):
+        for i = 0 to todoList.items.length:
+            if todoList.items[i].id equals id:
+                remove todoList.items[i]
+                return true
+        throw TodoNotFoundError
+    
+    // Mark todo as completed
+    function markTodoAsCompleted(id):
+        return updateTodo(id, {completed: true})
+    
+    // Get pending todos
+    function getPendingTodos():
+        return getTodosByFilter({completed: false})
+    
+    // Get completed todos
+    function getCompletedTodos():
+        return getTodosByFilter({completed: true})
+    
+    // Get overdue todos
+    function getOverdueTodos():
+        return getTodosByFilter({
+            completed: false,
+            dueDate: lessThan(getCurrentDate())
+        })
+
+// Helper Functions
+function generateUniqueId():
+    // Generate a unique identifier for todo items
+    return randomUUID()
+
+function matchesFilter(todo, filter):
+    // Match todo items against filter criteria
+    for each key, value in filter:
+        if todo[key] not equals value:
+            return false
+    return true
+
+function findTodoById(id):
+    // Helper function to find a todo by ID
+    for todo in todoList.items:
+        if todo.id equals id:
+            return todo
+    return null

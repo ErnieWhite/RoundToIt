@@ -1,0 +1,94 @@
+// Data Structure
+class TodoItem:
+    id: Integer
+    title: String
+    description: String
+    completed: Boolean
+    dueDate: Date
+    createdAt: Date
+    
+class TodoList:
+    items: List<TodoItem>
+    
+// Main Application Class
+class TodoApp:
+    todoList: TodoList
+    
+    // Create a new todo item
+    function createTodo(title, description, dueDate):
+        newTodo = new TodoItem
+        newTodo.id = generateUniqueId()
+        newTodo.title = title
+        newTodo.description = description
+        newTodo.dueDate = dueDate
+        newTodo.completed = false
+        newTodo.createdAt = getCurrentDate()
+        
+        todoList.items.append(newTodo)
+        return newTodo
+    
+    // Read all todos
+    function getAllTodos():
+        return todoList.items
+    
+    // Read todos by filter
+    function getTodosByFilter(filter):
+        filteredTodos = []
+        for todo in todoList.items:
+            if matchesFilter(todo, filter):
+                filteredTodos.append(todo)
+        return filteredTodos
+    
+    // Update todo
+    function updateTodo(id, updatedFields):
+        for todo in todoList.items:
+            if todo.id equals id:
+                if updatedFields.title exists:
+                    todo.title = updatedFields.title
+                if updatedFields.description exists:
+                    todo.description = updatedFields.description
+                if updatedFields.dueDate exists:
+                    todo.dueDate = updatedFields.dueDate
+                if updatedFields.completed exists:
+                    todo.completed = updatedFields.completed
+                return todo
+        throw TodoNotFoundError
+    
+    // Delete todo
+    function deleteTodo(id):
+        for i = 0 to todoList.items.length:
+            if todoList.items[i].id equals id:
+                remove todoList.items[i]
+                return true
+        throw TodoNotFoundError
+    
+    // Mark todo as completed
+    function markTodoAsCompleted(id):
+        return updateTodo(id, {completed: true})
+    
+    // Get pending todos
+    function getPendingTodos():
+        return getTodosByFilter({completed: false})
+    
+    // Get completed todos
+    function getCompletedTodos():
+        return getTodosByFilter({completed: true})
+    
+    // Get overdue todos
+    function getOverdueTodos():
+        return getTodosByFilter({
+            completed: false,
+            dueDate: lessThan(getCurrentDate())
+        })
+    
+// Helper Functions
+function generateUniqueId():
+    // Generate a unique identifier for todo items
+    return randomUUID()
+
+function matchesFilter(todo, filter):
+    // Match todo items against filter criteria
+    for each key, value in filter:
+        if todo[key] not equals value:
+            return false
+    return true

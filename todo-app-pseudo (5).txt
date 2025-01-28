@@ -1,0 +1,194 @@
+// Data Structure
+[... previous enums remain unchanged ...]
+
+class File:
+    id: Integer
+    filename: String
+    fileType: String
+    size: Integer
+    path: String
+    uploadedAt: Date
+    metadata: Map<String, Any>
+
+class Note:
+    id: Integer
+    content: String
+    category: NoteCategory
+    priority: NotePriority
+    createdAt: Date
+    attachments: List<File>    // Notes can have attachments
+    
+class TodoItem:
+    id: Integer
+    title: String
+    description: String
+    completed: Boolean
+    dueDate: Date
+    createdAt: Date
+    notes: List<Note>
+    attachments: List<File>    // Todo items can have attachments
+    
+class TodoList:
+    items: List<TodoItem>
+    categoryPriorityOverrides: Map<NoteCategory, NotePriority>
+    maxFileSize: Integer = 50 * 1024 * 1024  // 50MB default
+    allowedFileTypes: List<String> = ["pdf", "doc", "docx", "txt", "jpg", "png"]
+    
+// Main Application Class
+class TodoApp:
+    todoList: TodoList
+    fileStorage: FileStorageService    // Interface to file storage system
+    
+    // File management for Todo items
+    function addFileToTodo(todoId, file):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+            
+        validateFile(file)
+        
+        storedFile = uploadFile(file)
+        todo.attachments.append(storedFile)
+        return storedFile
+    
+    // File management for Notes
+    function addFileToNote(todoId, noteId, file):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+            
+        note = findNoteById(todo, noteId)
+        if note is null:
+            throw NoteNotFoundError
+            
+        validateFile(file)
+        
+        storedFile = uploadFile(file)
+        note.attachments.append(storedFile)
+        return storedFile
+    
+    // Get files for a todo item
+    function getTodoFiles(todoId):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+        return todo.attachments
+    
+    // Get files for a note
+    function getNoteFiles(todoId, noteId):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+            
+        note = findNoteById(todo, noteId)
+        if note is null:
+            throw NoteNotFoundError
+            
+        return note.attachments
+    
+    // Delete file from todo
+    function deleteFileFromTodo(todoId, fileId):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+            
+        file = findAndRemoveFile(todo.attachments, fileId)
+        if file is not null:
+            deleteStoredFile(file)
+            return true
+        throw FileNotFoundError
+    
+    // Delete file from note
+    function deleteFileFromNote(todoId, noteId, fileId):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+            
+        note = findNoteById(todo, noteId)
+        if note is null:
+            throw NoteNotFoundError
+            
+        file = findAndRemoveFile(note.attachments, fileId)
+        if file is not null:
+            deleteStoredFile(file)
+            return true
+        throw FileNotFoundError
+    
+    // Get all files across todos
+    function getAllFiles():
+        allFiles = []
+        for todo in todoList.items:
+            // Add todo attachments
+            for file in todo.attachments:
+                allFiles.append({
+                    todoId: todo.id,
+                    todoTitle: todo.title,
+                    noteId: null,
+                    file: file
+                })
+            // Add note attachments
+            for note in todo.notes:
+                for file in note.attachments:
+                    allFiles.append({
+                        todoId: todo.id,
+                        todoTitle: todo.title,
+                        noteId: note.id,
+                        file: file
+                    })
+        return allFiles
+    
+    // Configure file storage settings
+    function updateFileStorageSettings(maxSize = null, allowedTypes = null):
+        if maxSize is not null:
+            todoList.maxFileSize = maxSize
+        if allowedTypes is not null:
+            todoList.allowedFileTypes = allowedTypes
+    
+    [... previous TodoApp methods remain unchanged ...]
+
+// Helper Functions
+function validateFile(file):
+    // Check file size
+    if file.size > todoList.maxFileSize:
+        throw FileTooLargeError
+    
+    // Check file type
+    fileExtension = getFileExtension(file.filename)
+    if fileExtension not in todoList.allowedFileTypes:
+        throw InvalidFileTypeError
+
+function uploadFile(file):
+    // Generate unique filename
+    uniqueFilename = generateUniqueFilename(file.filename)
+    
+    // Upload to storage service
+    storedFile = fileStorage.upload(file, uniqueFilename)
+    
+    // Create file record
+    newFile = new File
+    newFile.id = generateUniqueId()
+    newFile.filename = file.filename
+    newFile.fileType = getFileExtension(file.filename)
+    newFile.size = file.size
+    newFile.path = storedFile.path
+    newFile.uploadedAt = getCurrentDate()
+    newFile.metadata = extractFileMetadata(file)
+    
+    return newFile
+
+function deleteStoredFile(file):
+    fileStorage.delete(file.path)
+
+function findNoteById(todo, noteId):
+    for note in todo.notes:
+        if note.id equals noteId:
+            return note
+    return null
+
+function findAndRemoveFile(fileList, fileId):
+    for i = 0 to fileList.length:
+        if fileList[i].id equals fileId:
+            return remove fileList[i]
+    return null
+
+[... previous helper functions remain unchanged ...]

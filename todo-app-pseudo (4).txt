@@ -1,0 +1,156 @@
+// Data Structure
+enum NotePriority:
+    HIGH = 3
+    MEDIUM = 2
+    LOW = 1
+
+enum NoteCategory:
+    BLOCKER:
+        defaultPriority: NotePriority.HIGH
+        description: "Issues blocking progress"
+    DECISION:
+        defaultPriority: NotePriority.HIGH
+        description: "Important decisions and outcomes"
+    PROGRESS_UPDATE:
+        defaultPriority: NotePriority.MEDIUM
+        description: "Status updates and progress"
+    QUESTION:
+        defaultPriority: NotePriority.MEDIUM
+        description: "Queries requiring attention"
+    REFERENCE:
+        defaultPriority: NotePriority.LOW
+        description: "Reference materials and links"
+    GENERAL:
+        defaultPriority: NotePriority.LOW
+        description: "Miscellaneous notes"
+
+class Note:
+    id: Integer
+    content: String
+    category: NoteCategory
+    priority: NotePriority
+    createdAt: Date
+    
+class TodoItem:
+    id: Integer
+    title: String
+    description: String
+    completed: Boolean
+    dueDate: Date
+    createdAt: Date
+    notes: List<Note>
+    
+class TodoList:
+    items: List<TodoItem>
+    categoryPriorityOverrides: Map<NoteCategory, NotePriority>
+    
+// Main Application Class
+class TodoApp:
+    todoList: TodoList
+    
+    // Constructor
+    constructor():
+        todoList = new TodoList
+        todoList.categoryPriorityOverrides = {}
+        
+    // Override default priority for a category
+    function setCategoryPriority(category, priority):
+        todoList.categoryPriorityOverrides[category] = priority
+    
+    // Reset category priority to default
+    function resetCategoryPriority(category):
+        remove todoList.categoryPriorityOverrides[category]
+    
+    // Get effective priority for a category
+    function getCategoryPriority(category):
+        if category in todoList.categoryPriorityOverrides:
+            return todoList.categoryPriorityOverrides[category]
+        return category.defaultPriority
+    
+    // Add categorized note to todo item
+    function addNote(todoId, noteContent, category = NoteCategory.GENERAL, customPriority = null):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+            
+        newNote = new Note
+        newNote.id = generateUniqueId()
+        newNote.content = noteContent
+        newNote.category = category
+        newNote.priority = customPriority ?? getCategoryPriority(category)
+        newNote.createdAt = getCurrentDate()
+        
+        todo.notes.append(newNote)
+        return newNote
+    
+    // Get notes sorted by priority
+    function getNotesByPriority(todoId, ascending = false):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+            
+        sortedNotes = todo.notes.copy()
+        sortedNotes.sort(key = note.priority, reverse = !ascending)
+        return sortedNotes
+    
+    // Get high priority notes
+    function getHighPriorityNotes(todoId):
+        return getNotesByCategory(todoId, null, NotePriority.HIGH)
+    
+    // Get notes by category and priority
+    function getNotesByCategory(todoId, category = null, priority = null):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+            
+        filteredNotes = []
+        for note in todo.notes:
+            if (category is null or note.category equals category) and
+               (priority is null or note.priority equals priority):
+                filteredNotes.append(note)
+        return filteredNotes
+    
+    // Get priority summary for todo
+    function getNotePrioritySummary(todoId):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+            
+        summary = {}
+        for priority in NotePriority:
+            summary[priority] = 0
+            
+        for note in todo.notes:
+            summary[note.priority]++
+            
+        return summary
+    
+    // Update note with new priority
+    function updateNotePriority(todoId, noteId, newPriority):
+        todo = findTodoById(todoId)
+        if todo is null:
+            throw TodoNotFoundError
+            
+        for note in todo.notes:
+            if note.id equals noteId:
+                note.priority = newPriority
+                return note
+        throw NoteNotFoundError
+    
+    // Get all high priority notes across todos
+    function getAllHighPriorityNotes():
+        highPriorityNotes = []
+        for todo in todoList.items:
+            for note in todo.notes:
+                if note.priority equals NotePriority.HIGH:
+                    highPriorityNotes.append({
+                        todoId: todo.id,
+                        todoTitle: todo.title,
+                        note: note
+                    })
+        return highPriorityNotes
+
+    [... previous TodoApp methods remain unchanged ...]
+
+// Helper Functions
+[... previous helper functions remain unchanged ...]
